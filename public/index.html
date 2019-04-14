@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+
+<meta charset="utf-8" />
+<title>Facelift - Add custom styles to any website</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style id="styles"></style>
+
+<style>
+  :root {
+    --gray: rgba(32, 33, 36, 0.28);
+    --gray-darker: rgba(32, 33, 36, 0.56);
+  }
+  * {
+    margin: 0;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  }
+
+  .main {
+    height: 100vh;
+    pointer-events: none;
+    position: fixed;
+    width: 100vw;
+    z-index: 123456789;
+  }
+
+  .page-wrapper {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    justify-content: space-evenly;
+    margin: 0 auto;
+    padding: 20px 0;
+    pointer-events: auto;
+    width: 500px;
+  }
+
+  .logo {
+    font-size: 52px;
+  }
+
+  .url,
+  .styles {
+    border: 0;
+    box-shadow: 0 1px 6px 0 var(--gray);
+    border-radius: 6px;
+    font-size: 16px;
+    line-height: 2;
+    outline: none;
+    padding: 6px 12px;
+    width: 500px;
+  }
+
+  .styles {
+    height: 200px;
+    resize: none;
+  }
+
+  .url:focus,
+  .styles:focus {
+    box-shadow: 0 1px 6px 0 var(--gray-darker);
+  }
+
+  .button {
+    background-color: #eee;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: black;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 6px 12px;
+  }
+
+  .button:hover {
+    border-color: var(--gray);
+  }
+
+  .preview {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+</style>
+
+<main class="main">
+  <div class="page-wrapper">
+    <h1 class="logo">facelift</h1>
+
+    <input class="url" placeholder="URL" onblur="fetchUrl()" />
+
+    <textarea
+      class="styles"
+      placeholder="Styles"
+      oninput="addStyle()"
+    ></textarea>
+
+    <button class="button" onclick="share()">Share Facelift!</button>
+  </div>
+</main>
+
+<iframe class="preview" height="100%" width="100%" frameborder="0"></iframe>
+
+<script>
+  const urlInput = document.querySelector(".url");
+  const stylesInput = document.querySelector(".styles");
+  const styles = document.querySelector("#styles");
+  const preview = document.querySelector(".preview");
+  let pageBody = "";
+
+  function updatePage() {
+    const customStyle = document.createElement("style");
+    customStyle.textContent = stylesInput.value;
+
+    const parser = new DOMParser();
+    const newDoc = parser.parseFromString(pageBody, "text/html");
+    newDoc.querySelector("head").appendChild(customStyle);
+
+    const doc = preview.contentWindow.document;
+
+    doc.open();
+    doc.write(newDoc.documentElement.outerHTML);
+    doc.close();
+  }
+
+  function fetchUrl() {
+    if (!urlInput.value) {
+      return;
+    }
+
+    fetch(`/url/${encodeURIComponent(urlInput.value)}`, {
+      method: "POST",
+      body: JSON.stringify(stylesInput.value)
+    })
+      .then(response => response.text())
+      .then(body => {
+        pageBody = body;
+
+        updatePage();
+      });
+  }
+
+  function addStyle() {
+    try {
+      updatePage();
+    } catch (e) {}
+  }
+
+  function share() {
+    const shareUrl = `/facelift/${encodeURIComponent(
+      urlInput.value
+    )}/${encodeURIComponent(stylesInput.value)}`;
+
+    location.href = shareUrl;
+  }
+</script>
